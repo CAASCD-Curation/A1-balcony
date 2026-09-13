@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阳台 · BALCONY — 流动的图像集合</title>
+<meta name="description" content="232 个关于阳台的词条，以浮动图像群的方式流动呈现。点击图像查看介绍，点击标签进入同标签集合。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════ 顶部：大标题 / 计数 / 当前标签 ══════════ -->
+<header class="site-head">
+  <div class="head-left">
+    <h1 class="site-title">阳台</h1>
+    <p class="site-sub">BALCONY · <span id="head-total">—</span> 个词条的流动图像群</p>
+  </div>
+  <div class="head-right">
+    <div class="filter-status" id="filter-status" hidden>
+      <span class="filter-prefix">标签</span>
+      <span class="filter-keyword" id="filter-keyword"></span>
+      <span class="filter-count" id="filter-count"></span>
+      <button class="btn-reset" id="btn-reset" type="button">全部 ×</button>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════ 主体：浮动图像群（2.5D 场景） ══════════ -->
+<main class="stage" id="stage">
+  <div class="scene" id="scene"><!-- JS 生成浮动图板 --></div>
+</main>
+
+<!-- ══════════ 底部 ══════════ -->
+<footer class="site-foot">
+  <span>点击图像查看介绍 · 点击介绍中的标签进入同标签集合</span>
+  <span class="foot-note">阳台 · BALCONY — 原生 HTML / CSS / JavaScript</span>
+</footer>
+
+<!-- ══════════ 详情面板（不跳转页面） ══════════ -->
+<div class="detail-overlay" id="detail-overlay" hidden>
+  <div class="detail-backdrop" id="detail-backdrop"></div>
+  <article class="detail-panel" id="detail-panel" role="dialog" aria-modal="true">
+    <button class="detail-close" id="detail-close" type="button" aria-label="关闭">×</button>
+    <div class="detail-media" id="detail-media"></div>
+    <div class="detail-body">
+      <div class="detail-meta" id="detail-meta"></div>
+      <h2 class="detail-title" id="detail-title"></h2>
+      <p class="detail-original" id="detail-original"></p>
+      <p class="detail-desc" id="detail-desc"></p>
+      <div class="detail-keywords" id="detail-keywords"></div>
+      <p class="detail-tip">点击标签，进入同标签的作品集合</p>
+    </div>
+  </article>
+</div>
+
+<!-- 数据层（与页面代码分离，可替换为 Supabase 接口） -->
+<script src="data/balcony-data.js"></script>
+<script src="js/data-source.js"></script>
+<script src="js/flow-layout.js"></script>
+<script src="js/flow.js"></script>
+<script src="js/detail.js"></script>
+<script src="js/filter.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

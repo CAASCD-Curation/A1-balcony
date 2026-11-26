@@ -1,0 +1,159 @@
+<!doctype html><html lang="zh-CN"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>开屏</title><style>@font-face{font-family:"Source Serif 4";src:url("assets/7aeabf5d263dbdcb7bae2574.woff") format("truetype");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0000-024F,U+1E00-1EFF,U+2000-206F,U+20A0-20CF,U+2100-214F}
+/* INTRO-03: bundled Source Han Serif SC; English Source Serif 4 unchanged. */
+@font-face{font-family:"Source Han Serif SC";src:url("assets/e6396c724ad83f80c54a51d3.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+
+/* Title uses real bold glyphs to match the supplied typography; body remains regular. */
+@font-face{font-family:"Source Han Serif SC";src:url("assets/9f2def26557e3835bdaf94e3.woff") format("woff");font-weight:700;font-style:normal;font-display:swap;unicode-range:U+9633,U+53F0}
+:root{color-scheme:light;font-family:"Source Serif 4","Source Han Serif SC",serif;color:var(--ink);background:var(--paper);font-synthesis:none}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}button{font:inherit;color:inherit;border:0;border-radius:0;background:none;cursor:pointer;padding:0}button:focus-visible{outline:1px solid var(--ink);outline-offset:7px}#space{position:fixed;inset:0;overflow:hidden;background:var(--paper);touch-action:none;overscroll-behavior:none}#perspective{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}#seams{fill:none;stroke:var(--line);stroke-width:.7;vector-effect:non-scaling-stroke}#picture{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--paper);overflow:hidden;cursor:crosshair;touch-action:none}#image{display:block;width:100%;height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}#image-error{position:absolute;inset:0;align-content:center;text-align:center;background:var(--paper);font-size:14px}
+/* INTRO-01: isolated opening; perspective ink matches #seams (.7px / #222). */
+body.intro-active #space,body.intro-active #archive-rail,body.intro-active #rain-info{visibility:hidden}
+#balcony-intro{position:fixed;inset:0;z-index:19;background:#fff;touch-action:none;overflow:hidden;opacity:1;transition:opacity .65s}
+#balcony-intro.leaving{opacity:0;pointer-events:none}
+#intro-lines,#intro-leaders{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;fill:none;stroke:#222;stroke-width:.7}
+#intro-lines{opacity:0;transition:opacity .7s ease}
+#balcony-intro.revealed #intro-lines{opacity:1}
+#intro-lines path,#intro-leaders path{vector-effect:non-scaling-stroke}
+#intro-title{position:absolute;left:50%;top:50%;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:.86;font-weight:400;transform:translate(-50%,-50%);transform-origin:center;white-space:nowrap;user-select:none;-webkit-user-select:none}
+#intro-title .intro-en{font-family:"Source Serif 4",serif;letter-spacing:-.055em}
+#intro-title .intro-zh{font-family:"Source Han Serif SC",serif;font-size:.93em;font-weight:700;line-height:1.1;margin-top:.12em;letter-spacing:-.035em}
+#intro-photo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);object-fit:contain;pointer-events:none;opacity:0}
+#intro-eye{position:fixed;right:calc(clamp(28px,3.4vw,48px) + 56px);top:24px;width:32px;height:32px;z-index:24;background:#fff;display:grid;place-items:center}
+#intro-eye svg{width:27px;height:22px;fill:none;stroke:#777;stroke-width:1}
+body.intro-active #index-toggle{z-index:24;box-shadow:none;outline:12px solid #fff}
+body.intro-active.index-open #index-toggle{visibility:visible}
+@media(max-width:700px){#intro-eye{top:18px;right:calc(clamp(28px,3.4vw,48px) + 44px);width:28px;height:28px}}
+@media(prefers-reduced-motion:reduce){#balcony-intro,#intro-lines{transition:none}}
+/* TITLE-11: live SVG text in the reference's 300×300 coordinate system.
+   textLength adjusts tracking only; glyph proportions and the four coordinates stay fixed. */
+#intro-title{display:block;line-height:1;color:#575753;font-weight:400}
+#intro-type{position:absolute;inset:0;display:block;width:100%;height:100%;fill:currentColor;stroke:none;font-weight:400;pointer-events:none}
+#intro-pinch-hint{position:absolute;display:block;left:0;top:calc(100% + 16px);width:100%;font-size:.24em;line-height:1.5;text-align:center;color:#666}
+[hidden]{display:none!important}:root{--paper:white;--line:#222;--ink:#222}
+#intro-title{will-change:transform;backface-visibility:hidden}
+</style><body class="intro-active"><section id="balcony-intro" aria-label="阳台档案开场" data-state="idle">
+    <svg id="intro-lines" aria-hidden="true"><path/></svg>
+    <button id="intro-title" aria-label="阳台：点击锁定方框，双指捏合从最内开始，张开从最外开始">
+      <svg id="intro-type" viewBox="0 0 300 300" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <text x="15" y="49" font-family="Source Han Serif SC" font-size="40" textLength="240" lengthAdjust="spacing">阳台档案图鉴</text>
+        <text x="-283" y="32" transform="rotate(-90)" font-family="Source Serif 4" font-size="30" textLength="222" lengthAdjust="spacing">Inside &amp; Outside</text>
+        <text x="18" y="-264" transform="rotate(90)" font-family="Source Han Serif SC" font-size="26" textLength="228" lengthAdjust="spacing">一隅之见 一面之间</text>
+        <text x="46" y="281" font-family="Source Serif 4" font-size="42" textLength="237" lengthAdjust="spacing">The Balcony</text>
+      </svg>
+      <span id="intro-pinch-hint">双指向内收缩 开始浏览</span>
+    </button>
+    <img id="intro-photo" alt="" draggable="false">
+    <svg id="intro-leaders" aria-hidden="true"><path/><path/><path/><path/></svg>
+  </section><script>(()=>{let last=performance.now(),touching=false,gesturing=false,pending=false;const stamp=()=>{last=performance.now()};for(const name of ['wheel','touchmove','gesturechange'])document.addEventListener(name,stamp,{capture:true,passive:true});document.addEventListener('touchstart',()=>{touching=true;stamp()},{capture:true,passive:true});for(const name of ['touchend','touchcancel'])document.addEventListener(name,e=>{touching=e.touches.length>0;stamp()},{capture:true,passive:true});document.addEventListener('gesturestart',()=>{gesturing=true;stamp()},{capture:true,passive:true});document.addEventListener('gestureend',()=>{gesturing=false;stamp()},{capture:true,passive:true});window.finishOpeningAfterRelease=()=>{if(pending)return;pending=true;const timer=setInterval(()=>{if(touching||gesturing||performance.now()-last<120)return;clearInterval(timer);parent.postMessage({type:'balcony-opening-complete'},'*')},30)}})();</script><script>(() => {
+  'use strict';
+  const CONFIG={edge:.14,revealMs:700,smoothingMs:190,exchangeMs:3000,exitMs:650};
+  const root=document.getElementById('balcony-intro');
+  if(!root)return;
+  const title=root.querySelector('#intro-title'),lines=root.querySelector('#intro-lines path');
+  const leaders=root.querySelector('#intro-leaders'),photo=root.querySelector('#intro-photo');
+  const eye=document.getElementById('intro-eye'),space=document.getElementById('space');
+  const picture=document.getElementById('picture');
+  let original=document.getElementById('image');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const controller=new AbortController(),signal=controller.signal;
+  const on=(el,type,fn,opts={})=>el.addEventListener(type,fn,{...opts,signal});
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  let state='idle',scale=1,wanted=1,minimum=.2,base=1,width=1,height=1;
+  let raf=0,last=0,exchangeStart=0,pinchDistance=0,safari=false,safariScale=1;
+  let revealed=false,showFrame=0,fromFrame=0,toFrame=0,frameStart=0,closing=false;
+  let photoReady=false,direction=0;
+  const hint=root.querySelector('#intro-pinch-hint');
+  hint.hidden=false;
+  function dismissPinchHint(){hint.hidden=true;}
+  const lastIndex=1,nav={frameSize(){return Math.max(24,Math.min(width-2*clamp(Math.min(width,height)*.12,48,96),height-144));}};
+  let maximum=1.3;
+  let textBox={left:0,top:0,right:1,bottom:1};
+
+  function layout(){
+    width=root.clientWidth;height=root.clientHeight;
+    // Square stays inside both portrait and landscape viewports.
+    base=Math.min(width*.78,height*.8,width*.47+(height>width?width*.31:0),nav.frameSize(lastIndex)*.78);
+    
+    minimum=Math.min(width,height)*.169/base;maximum=nav.frameSize(lastIndex)/base;
+    scale=clamp(scale,minimum,maximum);wanted=clamp(wanted,minimum,maximum);
+    title.style.width=title.style.height=`${base}px`;title.style.fontSize=`${base*.135}px`;
+    // TITLE-11: fixed live-text bounds in the reference 300px square.
+    // The text layout never reflows; leave 1.8% breathing space outside its corners.
+    const gap=base*.018;
+    textBox={left:base*(9/300)-gap,top:base*(17/300)-gap,right:base*(287/300)+gap,bottom:base*(290/300)+gap};
+
+    root.querySelectorAll('#intro-lines,#intro-leaders').forEach(svg=>svg.setAttribute('viewBox',`0 0 ${width} ${height}`));
+    if(state==="done")scale=wanted=minimum;
+    wake();
+  }
+  function reveal(value){
+    if(revealed===value)return;
+    revealed=value;fromFrame=showFrame;toFrame=value?1:0;frameStart=performance.now();
+    root.classList.toggle('revealed',value);wake();
+  }
+  function lock(){
+    if(state!=='idle')return;
+    state='locked';root.dataset.state=state;reveal(true);
+    title.setAttribute('aria-label','捏合从最内开始，张开从最外开始；电脑可使用滚轮或方向键');
+  }
+  // INTRO-06: first real pinch chooses the endpoint and permanently dismisses the hint.
+  function zoom(factor,pinch=false){
+    if(document.body.classList.contains('index-open')||state==='exchange'||closing||Math.abs(Math.log(factor))<.0001)return;
+    if(pinch){dismissPinchHint();if(state==='idle')lock();}
+    if(state!=='locked')return;
+    dismissPinchHint();
+    wanted=clamp(wanted*factor,minimum,maximum);wake();
+  }
+  function draw(time){
+    raf=0;
+    const dt=Math.min(60,time-(last||time));last=time;
+    const p=clamp((time-frameStart)/CONFIG.revealMs,0,1),ease=p*p*(3-2*p);
+    showFrame=fromFrame+(toFrame-fromFrame)*ease;
+    scale+= (wanted-scale)*(reduce?1:1-Math.exp(-dt/CONFIG.smoothingMs));
+    if(Math.abs(scale-wanted)<.0001)scale=wanted;
+    let fw=(textBox.right-textBox.left)*scale,fh=(textBox.bottom-textBox.top)*scale;
+    let x=(width-base*scale)/2+textBox.left*scale,y=(height-base*scale)/2+textBox.top*scale;
+    // Preview moves gently in from the outer corners; locking retains the frame.
+    const a=showFrame;
+    const xx=x*a,yy=y*a,rx=width+(x+fw-width)*a,by=height+(y+fh-height)*a;
+    lines.setAttribute('d',`M0 0L${xx} ${yy}M${width} 0L${rx} ${yy}M0 ${height}L${xx} ${by}M${width} ${height}L${rx} ${by}`);
+    title.style.transform=`translate(-50%,-50%) scale(${scale})`;
+    if(state==='locked' && wanted===minimum && scale===wanted && showFrame===1){
+      state='done';root.dataset.state=state;window.finishOpeningAfterRelease();
+      return;
+    }
+    if(scale!==wanted||p<1)wake();
+  }
+  function wake(){if(!raf&&!closing){last=last||performance.now();raf=requestAnimationFrame(draw);}}
+  on(title,'click',lock);
+  on(root,'pointermove',e=>{
+    if(state!=='idle'||e.pointerType==='touch')return;
+    reveal(e.clientX<width*CONFIG.edge||e.clientX>width*(1-CONFIG.edge)||e.clientY<height*CONFIG.edge||e.clientY>height*(1-CONFIG.edge));
+  });
+  on(root,'pointerleave',()=>{if(state==='idle')reveal(false);});
+  on(root,'wheel',e=>{e.preventDefault();if(state==='locked'||e.ctrlKey)zoom(Math.exp(e.deltaY*-.002),e.ctrlKey);},{passive:false});
+  const distance=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+  on(root,'touchstart',e=>{
+    if(e.touches.length===2){e.preventDefault();pinchDistance=distance(e.touches);}
+    else if(state==='idle'){const t=e.touches[0];reveal(t.clientX<width*.14||t.clientX>width*.86||t.clientY<height*.14||t.clientY>height*.86);}
+  },{passive:false});
+  on(root,'touchmove',e=>{if(e.touches.length!==2||!pinchDistance)return;e.preventDefault();const next=distance(e.touches);if(!safari)zoom(next/pinchDistance,true);pinchDistance=next;},{passive:false});
+  on(root,'touchend',e=>{if(e.touches.length<2)pinchDistance=0;if(state==='idle')reveal(false);});
+  on(root,'touchcancel',()=>{pinchDistance=0;if(state==='idle')reveal(false);});
+  on(root,'gesturestart',e=>{e.preventDefault();safari=true;safariScale=e.scale;},{passive:false});
+  on(root,'gesturechange',e=>{e.preventDefault();zoom(e.scale/safariScale,true);safariScale=e.scale;},{passive:false});
+  on(root,'gestureend',e=>{e.preventDefault();safari=false;pinchDistance=0;},{passive:false});
+  on(document,'keydown',e=>{
+    if(document.body.classList.contains('index-open')||e.target.closest('#index-toggle,#intro-eye'))return;
+    if(['ArrowDown','ArrowUp','ArrowLeft','ArrowRight','PageDown','PageUp','Home','End','Enter',' ','Escape','-','+','='].includes(e.key)){
+      e.stopImmediatePropagation();
+      if(e.key==='Escape'){return;}
+      else if(e.key==='Enter'||e.key===' '){e.preventDefault();if(state==='idle')lock();else zoom(.82);}
+      else {e.preventDefault();zoom(['ArrowUp','ArrowRight','PageUp','+','='].includes(e.key)?1.12:.88);}
+    }
+  },{capture:true});
+  on(window,'resize',layout);
+  document.fonts.ready.then(()=>{if(closing)return;layout();dismissPinchHint();lock();setTimeout(()=>{wanted=minimum;wake()},220)});
+  layout();
+})();
+</script></body></html>

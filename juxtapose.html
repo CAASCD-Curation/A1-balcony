@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>并陈</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff;color:#242422}
+    body{font-family:'Source Han Serif SC','Source Han Serif','Noto Serif CJK SC','Songti SC',serif;touch-action:none;user-select:none;-webkit-user-select:none}
+    #stage{position:relative;width:100vw;height:100dvh;overflow:hidden;touch-action:none;background:#fff}
+    #board{position:absolute;left:50%;top:50%;width:min(100vw,160vh);height:min(100vh,62.5vw);transform:translate(-50%,-50%);overflow:visible;background:#fff}
+    .poster-page #board{width:100vw;height:100dvh}
+    #lines{position:absolute;inset:0;width:100%;height:100%;z-index:0;overflow:visible;pointer-events:none}
+    .outer{stroke:#d0d0ce;stroke-width:1;fill:none}
+    .relation{stroke:#4a4a48;stroke-width:1.35;fill:none}
+    .user-line{fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .flow-text{font-kerning:normal;letter-spacing:.015em}
+    .flow-text text{paint-order:stroke;stroke:#fff;stroke-width:.12em;stroke-linejoin:round;fill:#626260}
+    .flow-text text{dominant-baseline:middle}
+    .poster-page #lines{transform:translate(var(--text-shift-x,0px),var(--text-shift-y,0px));transition:transform .15s ease-out}
+    .poster-page .custom-photo{overflow:hidden}
+    .poster-page .custom-photo img{transform:translate(var(--image-shift-x,0px),var(--image-shift-y,0px)) scale(1.035);transition:transform .15s ease-out}
+    .poster-page #topline,.poster-page #hint{display:none}
+    #cards{position:absolute;inset:0;z-index:2}
+    .card{position:absolute;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;cursor:grab;touch-action:none;will-change:left,top;z-index:2}
+    .card.dragging{cursor:grabbing;z-index:4}
+    .card img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;pointer-events:none;box-shadow:0 0 0 1px rgba(36,36,34,.035)}
+    .custom-photo{display:block;overflow:visible}
+    .custom-photo img{width:100%;height:100%;max-width:none;max-height:none;object-fit:fill;box-shadow:none}
+    .label{max-width:100%;margin-top:8px;text-align:center;line-height:1.45;font-size:clamp(10px,1vw,14px);letter-spacing:.02em;overflow-wrap:anywhere;background:rgba(255,255,255,.9);padding:1px 4px}
+    .code{font-family:Georgia,'Times New Roman',serif;font-size:.9em;letter-spacing:.04em;color:#777;margin-right:.45em;white-space:nowrap}
+    #topline{position:absolute;z-index:5;left:22px;right:22px;top:18px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;font-size:12px;letter-spacing:.08em;color:#696966}
+    #topline span{background:rgba(255,255,255,.84);padding:2px 4px}
+    #hint{position:absolute;z-index:5;left:0;right:0;bottom:20px;text-align:center;font-size:11px;letter-spacing:.12em;color:#777;pointer-events:none}
+    #nav{position:absolute;right:18px;bottom:14px;z-index:6;display:flex;gap:8px}
+    button{font:inherit;color:#5d5d5a;background:rgba(255,255,255,.86);border:1px solid #d9d9d6;border-radius:50%;width:32px;height:32px;cursor:pointer}
+    button:disabled{opacity:.28;cursor:default}
+    @media(max-width:700px){#topline{left:12px;right:12px;top:12px;font-size:10px}.label{font-size:10px;margin-top:4px;padding:0 2px}#hint{bottom:15px}#nav{right:10px;bottom:10px}}
+  </style>
+<style>@font-face{font-family:Chinese;src:url(assets/3d8a1a3ffa8f75b99d559a52.woff)}
+@font-face{font-family:English;src:url(assets/9ce4d4f84c216e534ff9bc3e.woff)}
+@font-face{font-family:ChineseMedium;src:url(assets/1267f0383e81386273920638.woff)}
+@font-face{font-family:EnglishMedium;src:url(assets/4f3c8aec86d5af71f30bdfe1.woff)}
+#composition{position:absolute;inset:0;display:none;overflow:hidden}
+.poster-page #composition{display:block}
+.poster-page #cards,.poster-page #lines,.poster-page #nav{display:none}
+#composition section,#composition svg{width:100%;height:100%;display:block}
+#composition .photo{cursor:grab;touch-action:none}#composition .dragging{cursor:grabbing}
+#wings{display:none;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.wing-page #wings{display:block}
+.wing-page #board{background:transparent}
+.wing-page #hint,.wing-page #topline,.wing-page #nav{display:none}
+#third{display:none;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.third-page #third{display:block}.third-page #board{background:transparent}
+.third-page #hint,.third-page #nav,.third-page #topline{display:none}
+#fourth{display:none;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.fourth-page #fourth{display:block}.fourth-page #board{background:transparent}
+.fourth-page #topline,.fourth-page #hint,.fourth-page #nav{display:none}
+#fifth{display:none;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.fifth-page #fifth{display:block}.fifth-page #board{background:transparent}
+.fifth-page #topline,.fifth-page #hint,.fifth-page #nav{display:none}
+</style></head>
+<body>
+  <main id="stage" class="first" aria-label="阳台颗粒并置网页演示">
+    <canvas id="fifth" aria-hidden="true"></canvas><canvas id="fourth" aria-hidden="true"></canvas><canvas id="third" aria-hidden="true"></canvas><canvas id="wings" aria-hidden="true"></canvas><div id="board">
+      <svg id="lines" viewBox="0 0 1600 1000" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div id="composition"></div><div id="cards"></div>
+    </div>
+    <div id="topline"><span id="page-label">01 / 05</span><span>阳台档案 · 向内至向外</span></div>
+    <div id="hint">双指向外张开进入下一组 · 拖动图片调整位置</div>
+    <div id="nav"><button id="prev" aria-label="上一页">−</button><button id="next" aria-label="下一页">＋</button></div>
+  </main>
+  <script>(()=>{let active=true;const raf=window.requestAnimationFrame.bind(window);window.requestAnimationFrame=fn=>raf(function tick(t){if(active)fn(t);else setTimeout(()=>raf(tick),150)});window.addEventListener('message',e=>{if(e.source===parent&&e.data?.type==='panel-active')active=!!e.data.active});document.addEventListener('keydown',e=>{if(e.key==='Escape')parent.postMessage({type:'panel-escape'},'*')});window.addEventListener('load',()=>{active=false;parent.postMessage({type:'panel-ready'},'*')})})();</script><script>window.USER_LAYOUTS=[{"items": [{"id": "A-08", "image": "assets/8b52e1361527bbe984250b72.jpg", "x": 651.0, "y": 303.0, "w": 297.075, "h": 393.477}], "lines": [{"a": {"x": 948.0, "y": 303.0, "at": {"image": 0, "dx": 297.075, "dy": 0}}, "b": {"x": 1600.0, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 651.0, "y": 303.0, "at": {"image": 0, "dx": 0, "dy": 0}}, "b": {"x": -2.28882e-05, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 651.0, "y": 696.0, "at": {"image": 0, "dx": 0, "dy": 393.477}}, "b": {"x": -2.28882e-05, "y": 1000.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 1600.0, "y": 1000.0, "at": null}, "b": {"x": 948.0, "y": 696.0, "at": {"image": 0, "dx": 297.075, "dy": 393.477}}, "stroke": "#555552", "width": 1}]}, {"items": [{"id": "A-03", "image": "assets/c1467fd1da23e9e7cb939acd.jpg", "x": 324.0, "y": 184.0, "w": 465.769, "h": 572.0}, {"id": "A-09", "image": "assets/1dc956efdddee1df58caa899.jpg", "x": 1134.0, "y": 567.0, "w": 141.78, "h": 188.86}], "lines": [{"a": {"x": 790.001, "y": 183.869, "at": {"image": 0, "dx": 465.769, "dy": 0}}, "b": {"x": 1276.0, "y": 567.0, "at": {"image": 1, "dx": 141.78, "dy": 0}}, "stroke": "#626260", "width": 1, "text": "母女与独自眺望的男人，都把阳台当作观看城市的边界。", "language": "zh", "fontSize": 16}, {"a": {"x": 1134.0, "y": 567.0, "at": {"image": 1, "dx": 0, "dy": 0}}, "b": {"x": 324.0, "y": 184.0, "at": {"image": 0, "dx": 0, "dy": 0}}, "stroke": "#626260", "width": 1, "text": "两幅画都让背影停在栏杆前，目光越过城市进入远处。", "language": "zh", "fontSize": 16}, {"a": {"x": 1276.0, "y": 755.946, "at": {"image": 1, "dx": 141.78, "dy": 188.86}}, "b": {"x": 324.002, "y": 756.0, "at": {"image": 0, "dx": 0, "dy": 572.0}}, "stroke": "#626260", "width": 1, "text": "Both figures stand at the edge of domestic life and look outward.", "language": "en", "fontSize": 16}, {"a": {"x": 1276.0, "y": 567.0, "at": {"image": 1, "dx": 141.78, "dy": 0}}, "b": {"x": 1600.0, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 1600.0, "y": 1000.0, "at": null}, "b": {"x": 1276.0, "y": 756.0, "at": {"image": 1, "dx": 141.78, "dy": 188.86}}, "stroke": "#555552", "width": 1}, {"a": {"x": 324.0, "y": 184.0, "at": {"image": 0, "dx": 0, "dy": 0}}, "b": {"x": -1.28746e-05, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 324.0, "y": 756.0, "at": {"image": 0, "dx": 0, "dy": 572.0}}, "b": {"x": -1.28746e-05, "y": 1000.0, "at": null}, "stroke": "#555552", "width": 1}]}, {"items": [{"id": "A-19", "image": "assets/0498ec81361a6a18598de6eb.jpg", "x": 648.0, "y": 184.0, "w": 627.803, "h": 412.0}, {"id": "A-21", "image": "assets/b101f475b5b68825a0eed179.jpg", "x": 1276.0, "y": 658.0, "w": 140.204, "h": 138.0}, {"id": "A-42", "image": "assets/384caea2a2979dc46ef53155.jpg", "x": 162.0, "y": 392.0, "w": 304.0, "h": 404.046}], "lines": [{"a": {"x": 1276.0, "y": 184.0, "at": {"image": 0, "dx": 627.803, "dy": 0}}, "b": {"x": 1600.0, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 648.0, "y": 184.0, "at": {"image": 0, "dx": 0, "dy": 0}}, "b": {"x": -2.57492e-05, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 1600.0, "y": 1000.0, "at": null}, "b": {"x": 466.0, "y": 796.0, "at": {"image": 2, "dx": 304.0, "dy": 404.046}}, "stroke": "#555552", "width": 1}, {"a": {"x": 162.0, "y": 795.0, "at": {"image": 2, "dx": 0, "dy": 404.046}}, "b": {"x": -6.4373e-06, "y": 1000.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 1416.0, "y": 658.0, "at": {"image": 1, "dx": 140.204, "dy": 0}}, "b": {"x": 1600.0, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 1600.0, "y": 1000.0, "at": null}, "b": {"x": 1416.0, "y": 796.0, "at": {"image": 1, "dx": 140.204, "dy": 138.0}}, "stroke": "#555552", "width": 1}, {"a": {"x": 162.0, "y": 392.0, "at": {"image": 2, "dx": 0, "dy": 0}}, "b": {"x": -6.4373e-06, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 1416.0, "y": 658.0, "at": {"image": 1, "dx": 140.204, "dy": 0}}, "b": {"x": 1276.0, "y": 184.0, "at": {"image": 0, "dx": 627.803, "dy": 0}}, "stroke": "#626260", "width": 1, "text": "家庭聚会与下午茶，都把露台变成日常相聚的空间。", "language": "zh", "fontSize": 16}, {"a": {"x": 466.0, "y": 392.0, "at": {"image": 2, "dx": 304.0, "dy": 0}}, "b": {"x": 648.0, "y": 184.0, "at": {"image": 0, "dx": 0, "dy": 0}}, "stroke": "#626260", "width": 1, "text": "Friends and family gather together, turning the terrace into a meeting place.", "language": "en", "fontSize": 16}, {"a": {"x": 466.0, "y": 795.0, "at": {"image": 2, "dx": 304.0, "dy": 404.046}}, "b": {"x": 1276.0, "y": 594.0, "at": {"image": 0, "dx": 627.803, "dy": 412.0}}, "stroke": "#626260", "width": 1, "text": "Friends and family gather together, turning the terrace into a meeting place.", "language": "en", "fontSize": 16}, {"a": {"x": 467.0, "y": 795.5, "at": {"image": 2, "dx": 304.0, "dy": 404.046}}, "b": {"x": 1276.0, "y": 796.0, "at": {"image": 1, "dx": 0, "dy": 138.0}}, "stroke": "#626260", "width": 1, "text": "朋友相聚与下午茶，都把露台变成日常会客空间。", "language": "zh", "fontSize": 23}]}, {"items": [{"id": "S-07", "image": "assets/a6c7c441390fffe0fbc65c4d.jpg", "x": 162.0, "y": 305.0, "w": 260.0, "h": 390.141}, {"id": "S-09", "image": "assets/f631100874636466cc56a077.jpg", "x": 518.0, "y": 533.0, "w": 160.6, "h": 160.6}, {"id": "S-15", "image": "assets/235129d76821448197461358.jpg", "x": 775.0, "y": 306.0, "w": 291.0, "h": 388.0}, {"id": "S-54", "image": "assets/2c33bfbd8750ef6e5fe47ea1.jpg", "x": 1162.0, "y": 510.0, "w": 276.3, "h": 184.2}], "lines": [{"a": {"x": 421.999, "y": 306.061, "at": {"image": 0, "dx": 260.0, "dy": 0}}, "b": {"x": 517.999, "y": 533.0, "at": {"image": 1, "dx": 0, "dy": 0}}, "stroke": "#626260", "width": 1, "text": "独处抽烟与邻里交谈，让阳台同时容纳私密和社交。", "language": "zh", "fontSize": 16}, {"a": {"x": 518.0, "y": 693.0, "at": {"image": 1, "dx": 0, "dy": 160.6}}, "b": {"x": 422.0, "y": 694.0, "at": {"image": 0, "dx": 260.0, "dy": 390.141}}, "stroke": "#626260", "width": 1, "text": "One balcony holds solitude; the next opens a brief conversation.", "language": "en", "fontSize": 16}, {"a": {"x": 1065.56, "y": 306.0, "at": {"image": 2, "dx": 291.0, "dy": 0}}, "b": {"x": 1162.0, "y": 510.0, "at": {"image": 3, "dx": 0, "dy": 0}}, "stroke": "#626260", "width": 1, "text": "吃饭与晒太阳，都让阳台成为日常休息的延伸。", "language": "zh", "fontSize": 23}, {"a": {"x": 1161.55, "y": 692.939, "at": {"image": 3, "dx": 0, "dy": 184.2}}, "b": {"x": 1065.55, "y": 693.939, "at": {"image": 2, "dx": 291.0, "dy": 388.0}}, "stroke": "#626260", "width": 1, "text": "Ordinary meals and sunbathing turn the balcony into a place for leisure.", "language": "en", "fontSize": 16}, {"a": {"x": 162.0, "y": 305.0, "at": {"image": 0, "dx": 0, "dy": 0}}, "b": {"x": -6.4373e-06, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 162.0, "y": 695.0, "at": {"image": 0, "dx": 0, "dy": 390.141}}, "b": {"x": -6.4373e-06, "y": 1000.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 518.001, "y": 692.0, "at": {"image": 1, "dx": 0, "dy": 160.6}}, "b": {"x": -0.000411281, "y": 999.915, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 677.999, "y": 693.0, "at": {"image": 1, "dx": 160.6, "dy": 160.6}}, "b": {"x": 1600.0, "y": 1000.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 680.0, "y": 533.0, "at": {"image": 1, "dx": 160.6, "dy": 0}}, "b": {"x": 775.0, "y": 306.0, "at": {"image": 2, "dx": 0, "dy": 0}}, "stroke": "#626260", "width": 1, "text": "Conversation and a meal carry everyday life across the threshold.", "language": "en", "fontSize": 16}, {"a": {"x": 774.0, "y": 692.0, "at": {"image": 2, "dx": 0, "dy": 388.0}}, "b": {"x": 678.0, "y": 693.0, "at": {"image": 1, "dx": 160.6, "dy": 160.6}}, "stroke": "#626260", "width": 1, "text": "Both extend home life into a shared outdoor edge.", "language": "en", "fontSize": 23}, {"a": {"x": 1438.0, "y": 510.0, "at": {"image": 3, "dx": 276.3, "dy": 0}}, "b": {"x": 1600.0, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 1600.0, "y": 1000.0, "at": null}, "b": {"x": 1438.0, "y": 694.0, "at": {"image": 3, "dx": 276.3, "dy": 184.2}}, "stroke": "#555552", "width": 1}, {"a": {"x": 1066.0, "y": 306.0, "at": {"image": 2, "dx": 291.0, "dy": 0}}, "b": {"x": 1600.0, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 774.0, "y": 305.0, "at": {"image": 2, "dx": 0, "dy": 0}}, "b": {"x": 2.28882e-05, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}]}, {"items": [{"id": "A-26", "image": "assets/624082d2f8bdf3b08c8e560d.jpg", "x": 975, "y": 362, "w": 301.333, "h": 226}, {"id": "A-27", "image": "assets/09fed869fe2d4c9aa63fdac9.jpg", "x": 434, "y": 482, "w": 195.2, "h": 284.469}, {"id": "L-18", "image": "assets/9079d13b8821741fc9fc9423.jpg", "x": 650, "y": 362, "w": 303.74, "h": 403.742}, {"id": "L-20", "image": "assets/eced9aa159bc596d66c4105d.jpg", "x": 434, "y": 216, "w": 304, "h": 126.244}, {"id": "S-52", "image": "assets/29f7a4381bdd97756d54ba83.jpg", "x": 1185, "y": 624, "w": 92.462, "h": 159}], "lines": [{"a": {"x": 738.0, "y": 216.0, "at": {"image": 3, "dx": 304, "dy": 0}}, "b": {"x": 1600.0, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 434.0, "y": 216.0, "at": {"image": 3, "dx": 0, "dy": 0}}, "b": {"x": -1.52588e-05, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 650.0, "y": 766.0, "at": {"image": 2, "dx": 0, "dy": 403.742}}, "b": {"x": -2.38419e-05, "y": 1000.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 1600.0, "y": 1000.0, "at": null}, "b": {"x": 954.0, "y": 766.0, "at": {"image": 2, "dx": 303.74, "dy": 403.742}}, "stroke": "#555552", "width": 1}, {"a": {"x": 1277.0, "y": 362.0, "at": {"image": 0, "dx": 301.333, "dy": 0}}, "b": {"x": 1600.0, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 434.0, "y": 482.0, "at": {"image": 1, "dx": 0, "dy": 0}}, "b": {"x": -1.52588e-05, "y": 0.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 1276.0, "y": 362.0, "at": {"image": 0, "dx": 301.333, "dy": 0}}, "b": {"x": 738.0, "y": 216.0, "at": {"image": 3, "dx": 304, "dy": 0}}, "stroke": "#626260", "width": 1, "text": "闲暇与衰微形成对照，都让身体停在风景之中。", "language": "zh", "fontSize": 23}, {"a": {"x": 954.0, "y": 362.0, "at": {"image": 2, "dx": 303.74, "dy": 0}}, "b": {"x": 738.0, "y": 342.0, "at": {"image": 3, "dx": 304, "dy": 126.244}}, "stroke": "#626260", "width": 1, "text": "窗与檐把室内外的光线转成观看与情绪。", "language": "zh", "fontSize": 30}, {"a": {"x": 650.0, "y": 362.0, "at": {"image": 2, "dx": 0, "dy": 0}}, "b": {"x": 434.0, "y": 482.0, "at": {"image": 1, "dx": 0, "dy": 0}}, "stroke": "#626260", "width": 1, "text": "A balcony and an open room make looking outward part of dwelling.", "language": "en", "fontSize": 16}, {"a": {"x": 1185.0, "y": 624.0, "at": {"image": 4, "dx": 0, "dy": 0}}, "b": {"x": 954.0, "y": 766.0, "at": {"image": 2, "dx": 303.74, "dy": 403.742}}, "stroke": "#626260", "width": 1, "text": "Rest and looking outward turn a room’s edge into a pause.", "language": "en", "fontSize": 16}, {"a": {"x": 434.0, "y": 766.0, "at": {"image": 1, "dx": 0, "dy": 284.469}}, "b": {"x": -1.52588e-05, "y": 1000.0, "at": null}, "stroke": "#555552", "width": 1}, {"a": {"x": 1600.0, "y": 1000.0, "at": null}, "b": {"x": 1277.0, "y": 588.0, "at": {"image": 0, "dx": 301.333, "dy": 226}}, "stroke": "#555552", "width": 1}]}];</script>
+  <script>
+    const stage=document.querySelector('#stage'),board=document.querySelector('#board'),cards=document.querySelector('#cards'),svg=document.querySelector('#lines');
+    const prev=document.querySelector('#prev'),next=document.querySelector('#next'),ns='http://www.w3.org/2000/svg';
+    let page=1,pointers=new Map(),pinchStart=null,pinchDone=false,zoomWheel=0,wheelTimer,wheelUsed=false;
+    const pageStates=new Map();
+    function setPageState(index,items){pageStates.set(index,items);return items;}
+    function setup(){
+      stage.classList.toggle('fifth-page',page===4);stage.classList.toggle('fourth-page',page===3);stage.classList.toggle('third-page',page===2);stage.classList.toggle('wing-page',page===1);stage.classList.toggle('poster-page',page===0);
+      stage.style.setProperty('--text-shift-x','0px');stage.style.setProperty('--text-shift-y','0px');stage.style.setProperty('--image-shift-x','0px');stage.style.setProperty('--image-shift-y','0px');
+      cards.replaceChildren();svg.replaceChildren();
+      document.querySelector('#page-label').textContent=String(page).padStart(2,'0')+' / 04';
+      prev.disabled=page===1;next.disabled=page===USER_LAYOUTS.length-1;
+      document.querySelector('#hint').textContent='双指向外张开进入下一页 · 图片可拖动，连线与文字长度固定';
+      const source=USER_LAYOUTS[page];
+      const initial=source.items.map(x=>({...x}));if(page===0){initial[0].w=560;initial[0].h=466.7;initial[0].x=520;initial[0].y=260;}
+      const items=pageStates.get(page)||setPageState(page,initial);
+      if(page===4 && !items[0].positioned){
+        const frame=board.getBoundingClientRect();
+        const reference=[[1104,481,297],[605,548,193],[1641,348,299],[919,145,301],[1433,545,92]];
+        const scale=Math.min(stage.clientWidth/2048,stage.clientHeight/991);
+        items.forEach((item,i)=>{
+          const [x,y,width]=reference[i],ratio=item.h/item.w;
+          item.x=(stage.clientWidth*x/2048-frame.left)*1600/frame.width;
+          item.y=(stage.clientHeight*y/991-frame.top)*1000/frame.height;
+          item.w=width*scale*1600/frame.width;
+          item.h=width*scale*ratio*1000/frame.height;
+          item.positioned=true;
+        });
+      }
+      if(page===3 && !items[0].positioned){
+        const frame=board.getBoundingClientRect();
+        const reference=[[171,388,257],[593,720,159],[975,205,288],[1419,522,273]];
+        const scale=Math.min(stage.clientWidth/2048,stage.clientHeight/991);
+        items.forEach((item,i)=>{
+          const [x,y,width]=reference[i],ratio=item.h/item.w;
+          item.x=(stage.clientWidth*x/2048-frame.left)*1600/frame.width;
+          item.y=(stage.clientHeight*y/991-frame.top)*1000/frame.height;
+          item.w=width*scale*1600/frame.width;
+          item.h=width*scale*ratio*1000/frame.height;
+          item.positioned=true;
+        });
+      }
+      if(page===2 && !items[0].positioned){
+        const frame=board.getBoundingClientRect();
+        const reference=[[942,229,704],[1639,733,158],[325,503,340]];
+        const scale=Math.min(stage.clientWidth/2048,stage.clientHeight/1125);
+        items.forEach((item,i)=>{
+          const [x,y,width]=reference[i],ratio=item.h/item.w;
+          item.x=(stage.clientWidth*x/2048-frame.left)*1600/frame.width;
+          item.y=(stage.clientHeight*y/1125-frame.top)*1000/frame.height;
+          item.w=width*scale*1600/frame.width;
+          item.h=width*scale*ratio*1000/frame.height;
+          item.positioned=true;
+        });
+      }
+      if(page===1 && !items[0].positioned){
+        const frame=board.getBoundingClientRect();
+        const reference=[[719,7,522],[1393,628,159]];
+        items.forEach((item,i)=>{
+          const [x,y,width]=reference[i],ratio=item.h/item.w;
+          const scale=Math.min(stage.clientWidth/2048,stage.clientHeight/1127);
+          item.x=(stage.clientWidth*x/2048-frame.left)*1600/frame.width;
+          item.y=(stage.clientHeight*y/1127-frame.top)*1000/frame.height;
+          item.w=width*scale*1600/frame.width;
+          item.h=width*scale*ratio*1000/frame.height;
+          item.positioned=true;
+        });
+      }
+      if(page===0)resizePosterImage(items[0]);
+      items.forEach((item,i)=>makeCustomCard(item,i));
+      requestAnimationFrame(drawLines);
+    }
+    function resizePosterImage(item){const r=board.getBoundingClientRect(),cy=item.y+item.h/2,ratio=1359/1800;item.h=item.w*(r.width/r.height)/(1.6*ratio);item.y=cy-item.h/2;}
+    function placeCustom(el,item){el.style.left=(item.x/16)+'%';el.style.top=(item.y/10)+'%';el.style.width=(item.w/16)+'%';el.style.height=(item.h/10)+'%';}
+    function makeCustomCard(item,index){
+      const el=document.createElement('div');el.className='card custom-photo';el.dataset.index=index;el.dataset.mode='custom';placeCustom(el,item);
+      const img=document.createElement('img');img.src=item.image;img.alt=item.id;img.draggable=false;el.append(img);cards.append(el);bindDrag(el,item);img.addEventListener('load',drawLines);
+    }
+    function bindDrag(el,item){
+      el.addEventListener('pointerdown',ev=>{if(ev.pointerType==='mouse'&&ev.button!==0)return;el.classList.add('dragging');el.setPointerCapture(ev.pointerId);el._drag={pointer:ev.pointerId,clientX:ev.clientX,clientY:ev.clientY,x:item.x,y:item.y};});
+      el.addEventListener('pointermove',ev=>{const d=el._drag;if(!d||d.pointer!==ev.pointerId||pointers.size>1)return;const r=board.getBoundingClientRect();item.x=d.x+(ev.clientX-d.clientX)*1600/r.width;item.y=d.y+(ev.clientY-d.clientY)*1000/r.height;placeCustom(el,item);drawLines();});
+      const done=ev=>{if(el._drag&&(!ev||el._drag.pointer===ev.pointerId)){el._drag=null;el.classList.remove('dragging');}};
+      el.addEventListener('pointerup',done);el.addEventListener('pointercancel',done);el.addEventListener('lostpointercapture',done);
+    }
+    function addLine(x1,y1,x2,y2,kind='relation',style={}){const l=document.createElementNS(ns,'line');l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('class',kind);if(style.stroke)l.setAttribute('stroke',style.stroke);if(style.width)l.setAttribute('stroke-width',style.width);svg.append(l);}
+    function endpoint(p,items){if(!p.at)return [p.x,p.y];const item=items[p.at.image];const base=USER_LAYOUTS[page].items[p.at.image];return [item.x+p.at.dx*((page>=1&&page<=4)?item.w/base.w:1),item.y+p.at.dy*((page>=1&&page<=4)?item.h/base.h:1)];}
+    function addFlowText(line,pageIndex,lineIndex,items){
+      let a=endpoint(line.a,items),b=endpoint(line.b,items);
+      const dx=b[0]-a[0],dy=b[1]-a[1];
+      if(Math.abs(dx)<2){if(a[1]>b[1])[a,b]=[b,a];}
+      else if(a[0]>b[0])[a,b]=[b,a];
+      if(line.reverse)[a,b]=[b,a];
+      const vx=b[0]-a[0],vy=b[1]-a[1],len=Math.hypot(vx,vy),angle=Math.atan2(vy,vx)*180/Math.PI;
+      const baseSize=line.fontSize||16,fs=line.poster?baseSize:(line.language==='en'?Math.max(30,baseSize*1.5):baseSize);
+      const font=line.language==='en'?'"Source Serif 4", Georgia, serif':'"Source Han Serif SC", "Source Han Serif", "Noto Serif CJK SC", "Songti SC", serif';
+      const phrase=line.text+(line.language==='en'?'  /  ':'　　'),clipId=`flow-clip-${pageIndex}-${lineIndex}`;
+      const defs=document.createElementNS(ns,'defs'),clip=document.createElementNS(ns,'clipPath'),rect=document.createElementNS(ns,'rect');
+      clip.setAttribute('id',clipId);clip.setAttribute('clipPathUnits','userSpaceOnUse');rect.setAttribute('x','0');rect.setAttribute('y',String(-fs*1.2));rect.setAttribute('width',String(len));rect.setAttribute('height',String(fs*2.4));clip.append(rect);defs.append(clip);svg.append(defs);
+      const group=document.createElementNS(ns,'g');group.setAttribute('transform',`translate(${a[0]} ${a[1]}) rotate(${angle})`);group.setAttribute('clip-path',`url(#${clipId})`);group.setAttribute('class','flow-text');
+      const text=document.createElementNS(ns,'text');text.setAttribute('x','0');text.setAttribute('y','0');text.setAttribute('font-family',font);text.setAttribute('font-size',String(fs));text.setAttribute('fill','#626260');
+      if(line.tone)text.style.fill=line.tone;
+      const probe=document.createElementNS(ns,'tspan');probe.setAttribute('x','0');probe.textContent=phrase;text.append(probe);group.append(text);svg.append(group);
+      let unitWidth=probe.getComputedTextLength();
+      if(!unitWidth){const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.font=`${fs}px ${font}`;unitWidth=ctx.measureText(phrase).width;}
+      const repeats=Math.max(1,Math.ceil((len+unitWidth*.65)/Math.max(1,unitWidth))),chunk=phrase.repeat(repeats);
+      probe.textContent=chunk;const chunkWidth=probe.getComputedTextLength()||unitWidth*repeats;
+      const second=document.createElementNS(ns,'tspan');second.setAttribute('x',String(chunkWidth));second.textContent=chunk;text.append(second);
+      const speed=25+((pageIndex*3+lineIndex*5)%9);const anim=document.createElementNS(ns,'animateTransform');anim.setAttribute('attributeName','transform');anim.setAttribute('type','translate');anim.setAttribute('from','0 0');anim.setAttribute('to',`${-chunkWidth} 0`);anim.setAttribute('dur',`${Math.max(5,chunkWidth/speed)}s`);anim.setAttribute('repeatCount','indefinite');anim.setAttribute('begin',`${((pageIndex*7+lineIndex)*.71)%4}s`);text.append(anim);
+    }
+    const posterCopy={
+      zh:['木棺取代人物，使熟悉场景变得静止而惊悚。','本应停留的身体以封闭容器的形态出现。','建筑向外开放，棺体却把内部完全封闭。','观者认出旧构图，也遭遇无法回应的对象。','熟悉图像的再造改变了住宅场景的公共记忆。'],
+      en:['Green railings and shutters retain the original frame while its subject is replaced.','The balcony’s display position holds absence instead of everyday action.','Open architecture and a sealed coffin set two forms of enclosure against each other.','The vanished gaze removes the possibility of looking back.','Through quotation and substitution, the balcony turns looking and absence into public memory.']
+    };
+    function posterPoint(item,dx,dy){return {x:item.x+dx,y:item.y+dy,at:{image:0,dx,dy}};}
+    function addPosterLines(items){
+      const item=items[0],tones=['#242422','#3d3d3b','#585856','#777774','#969692'];
+      const yTop=Math.max(22,item.y-48),yHigh=Math.max(115,item.y-8),yLow=Math.min(875,item.y+item.h+14),yBottom=Math.min(970,item.y+item.h+74);
+      const leftX=[Math.max(28,item.x-405),Math.max(115,item.x-280),Math.max(230,item.x-150)];
+      const rightX=[Math.min(1355,item.x+item.w+155),Math.min(1510,item.x+item.w+330)];
+      const zhY=[24,yTop,yHigh,yBottom,975],zhSize=[80,50,31,43,78];
+      const enX=[leftX[0],rightX[1],leftX[1],rightX[0],leftX[2]],enSize=[82,68,48,37,59];
+      for(let i=0;i<5;i++){
+        const zh={a:{x:0,y:zhY[i]},b:{x:1600,y:zhY[i]}};
+        const en={a:{x:enX[i],y:0},b:{x:enX[i],y:1000},reverse:i===0||i===2||i===4};
+        addFlowText({...zh,text:posterCopy.zh[i],language:'zh',fontSize:zhSize[i],tone:tones[i],poster:true},0,200+i,items);
+        addFlowText({...en,text:posterCopy.en[i],language:'en',fontSize:enSize[i],tone:tones[i],poster:true},0,210+i,items);
+      }
+    }
+    function drawLines(){
+      svg.replaceChildren();
+      const data=USER_LAYOUTS[page];
+      const items=pageStates.get(page)||data.items;
+      if(page===0)return;
+      data.lines.forEach((l,i)=>{if(l.text)addFlowText(l,page,i,items);else if(page>4)addLine(l.a.x,l.a.y,l.b.x,l.b.y,'user-line',{stroke:l.stroke,width:l.width});});
+    }
+    function changePage(delta){document.querySelector('#juxtapose-hint')?.remove();if(page===4&&delta>0){parent.postMessage({type:'close-juxtapose'},'*');return;}const dest=Math.max(1,Math.min(4,page+delta));if(dest===page)return;page=dest;setup();}
+    let safariPinch=false,safariBase=1,safariUsed=false;
+ stage.addEventListener('gesturestart',e=>{e.preventDefault();safariPinch=true;safariBase=e.scale||1;safariUsed=false},{passive:false});
+ stage.addEventListener('gesturechange',e=>{e.preventDefault();if(!safariPinch||safariUsed)return;const delta=Math.log(e.scale/safariBase);if(Math.abs(delta)>.12){safariUsed=true;changePage(delta>0?1:-1)}},{passive:false});
+ stage.addEventListener('gestureend',e=>{e.preventDefault();safariPinch=false},{passive:false});
+ prev.addEventListener('click',()=>changePage(-1));next.addEventListener('click',()=>changePage(1));
+    window.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')changePage(1);if(e.key==='ArrowLeft'||e.key==='ArrowUp')changePage(-1);});
+    stage.addEventListener('pointerdown',e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===2){const p=[...pointers.values()];pinchStart=Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y);pinchDone=false;}});
+    stage.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===2&&pinchStart&&!pinchDone){const p=[...pointers.values()],d=Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y);if(Math.abs(d-pinchStart)>45){pinchDone=true;changePage(d>pinchStart?1:-1);}}});
+    const release=e=>{pointers.delete(e.pointerId);if(pointers.size<2){pinchStart=null;pinchDone=false;}};
+    stage.addEventListener('pointerup',release);stage.addEventListener('pointercancel',release);
+    stage.addEventListener('wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();if(safariPinch)return;if(!wheelUsed)zoomWheel+=e.deltaY;if(!wheelUsed&&Math.abs(zoomWheel)>45){wheelUsed=true;changePage(zoomWheel<0?1:-1);zoomWheel=0;}clearTimeout(wheelTimer);wheelTimer=setTimeout(()=>{zoomWheel=0;wheelUsed=false},220);},{passive:false});
+    stage.addEventListener('pointermove',e=>{if(page!==0||e.pointerType==='touch')return;const r=stage.getBoundingClientRect(),mx=(e.clientX-r.left)/r.width-.5,my=(e.clientY-r.top)/r.height-.5;stage.style.setProperty('--text-shift-x',`${mx*8}px`);stage.style.setProperty('--text-shift-y',`${my*7}px`);stage.style.setProperty('--image-shift-x',`${-mx*16}px`);stage.style.setProperty('--image-shift-y',`${-my*13}px`);});
+    window.addEventListener('resize',()=>{if(page===0){const items=pageStates.get(0);if(items)resizePosterImage(items[0]);}setup();});setup();
+  </script>
+<script>(()=>{const ARTWORKS=[{"id": "A-08", "title": "《透视 II：马奈的阳台》", "zone": "中间过渡", "width": 1434, "height": 1899, "image": "assets/d39cddadd851ab7f12dc932f.jpg", "pairs": [["木棺取代人物，使熟悉场景变得静止而惊悚。", "绿栏与百叶门保留原有框架，内部主体却被置换。"], ["本应停留的身体以封闭容器的形态出现。", "阳台的展示位置承托了缺席而非日常动作。"], ["建筑向外开放，棺体却把内部完全封闭。", "两种相反的围合方式在同一画面中并置。"], ["观者认出旧构图，也遭遇无法回应的对象。", "人物目光的消失使观看失去互相回应的可能。"], ["熟悉图像的再造改变了住宅场景的公共记忆。", "阳台在引用与置换中成为讨论观看和缺席的结构。"]], "en": [["Coffins replace the figures, making a familiar scene still and unsettling.", "The green railing and shutters retain the frame while its occupants are replaced."], ["Bodies that should linger appear instead as closed containers.", "The balcony's display position supports absence rather than everyday movement."], ["The building opens outwards while the coffins seal their interiors.", "Two opposing forms of enclosure coexist within one picture."], ["We recognise an earlier composition but face objects unable to respond.", "The disappearance of human gazes removes the possibility of reciprocal looking."], ["Remaking a familiar image alters the public memory of a domestic scene.", "Through quotation and substitution, the balcony becomes a structure for examining looking and absence."]]}];
+const NS='http://www.w3.org/2000/svg';
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');let paused=reduced.matches;const posters=[];
+const layout={top:[[.035,.011,.935,.035],[.175,.053,.75,.028],[.345,.086,.549,.0195],[.38,.109,.484,.017],[.435,.128,.402,.012]],bottom:[[.035,.855,.935,.10],[.16,.775,.735,.052],[.28,.706,.584,.047],[.343,.656,.494,.0365],[.405,.625,.408,.021]],left:[[.028,.056,.125,.771],[.182,.088,.073,.667],[.28,.09,.054,.60],[.34,.108,.052,.538],[.405,.129,.029,.491]],right:[[.934,.056,.038,.771],[.897,.088,.034,.667],[.867,.109,.027,.60],[.842,.128,.023,.538],[.818,.143,.019,.491]]};
+function mount(a){
+ const W=stageRoot.clientWidth,H=stageRoot.clientHeight;
+ const stage=document.createElement('section');stage.className='poster';stage.dataset.id=a.id;stage.setAttribute('aria-label',a.id+' '+a.title);document.querySelector('#composition').append(stage);
+ const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('aria-label',a.title+' 五层十句话动态海报');stage.append(svg);
+ const el=(tag,attrs={},parent=svg)=>{const e=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);parent.append(e);return e};
+ el('rect',{width:W,height:H,fill:'white'});const defs=el('defs'),ctx=document.createElement('canvas').getContext('2d'),rows=[];
+ const scale=Math.min(W*.35/a.width,H*.43/a.height);
+ const home={w:a.width*scale,h:a.height*scale};
+ home.x=(W-home.w)/2;home.y=(H-home.h)/2;
+ function fit(v,start,end,near,far,extent){
+   if(v<=start)return near*v/start;
+   if(v>=end)return far+(extent-far)*(v-end)/(1-end);
+   return near+(far-near)*(v-start)/(end-start);
+ }
+ const X=v=>fit(v,.463,.797,home.x,home.x+home.w,W);
+ const Y=v=>fit(v,.158,.588,home.y,home.y+home.h,H);
+ for(const side of ['top','bottom','left','right'])for(let n=0;n<5;n++){
+ const k=4-n,text=side==='top'?a.pairs[k][1]:side==='bottom'?a.pairs[k][0]:side==='left'?a.en[k][0]:a.en[k][1];
+ const v=side==='left'||side==='right',family=(side==='left'?'EnglishMedium':side==='bottom'?'ChineseMedium':v?'English':'Chinese'),box=layout[side][n],x=X(box[0]),y=Y(box[1]),w=X(box[0]+box[2])-x,h=Y(box[1]+box[3])-y;
+ const thickness=v?w:h,length=v?h:w;
+ ctx.font=`100px ${family}`;let m=ctx.measureText(text),ink=(m.actualBoundingBoxAscent+m.actualBoundingBoxDescent)||100;
+ const fontSize=100*(thickness*.96)/ink;ctx.font=`${fontSize}px ${family}`;m=ctx.measureText(text);
+ const clip=el('clipPath',{id:`clip-${a.id}-${side}-${n}`,clipPathUnits:'userSpaceOnUse'},defs),clipRect=el('rect',{width:length,height:thickness},clip);
+ const group=el('g',{'pointer-events':'none'}),rotation=el('g',{},group),visible=el('g',{'clip-path':`url(#clip-${a.id}-${side}-${n})`},rotation),tape=el('g',{},visible);
+ const t=el('text',{'font-family':family,'font-size':fontSize,fill:['#242422','#353533','#545451','#737370','#898986'][n],x:0,y:thickness*.02+m.actualBoundingBoxAscent,'xml:space':'preserve'},tape);t.textContent=text;
+ // Canvas measures correctly even while this poster is display:none.
+ const period=Math.max(1,m.width)+fontSize*(v?1.4:.9);
+ for(let j=1;j<Math.ceil(Math.max(W,H)*7/period)+4;j++){const copy=t.cloneNode(true);copy.setAttribute('x',period*j);tape.append(copy);}
+ rows.push({group,rotation,clipRect,tape,side,n,v,x,y,w,h,length,thickness,period,speed:(42-4*n)*Math.min(W,H)/724});
+ }
+ const photo=el('image',{class:'photo',href:a.image,x:home.x,y:home.y,width:home.w,height:home.h,preserveAspectRatio:'xMidYMid meet',tabindex:0,role:'img','aria-label':a.title+'，拖动或方向键移动，双击复位'});
+ let dx=0,dy=0,tx=0,ty=0,px=0,py=0,mx=0,my=0,clock=0,last=0,drag=null;
+ const clamp=(v,l,h)=>Math.max(l,Math.min(h,v));
+ function move(x,y){tx=clamp(x,-W*.12,W*.07);ty=clamp(y,-H*.055,H*.12)}
+ function mapX(x){return x<home.x?x+dx*x/home.x:x>home.x+home.w?x+dx*(W-x)/(W-home.x-home.w):x+dx}
+ function mapY(y){return y<home.y?y+dy*y/home.y:y>home.y+home.h?y+dy*(H-y)/(H-home.y-home.h):y+dy}
+ function render(){for(const r of rows){const nw=mapX(r.x+r.w)-mapX(r.x),nh=mapY(r.y+r.h)-mapY(r.y),size=r.v?nw/r.w:nh/r.h,len=(r.v?nh:nw)/size;
+ r.group.setAttribute('transform',`translate(${mapX(r.x)+px*(.2+r.n*.15)} ${mapY(r.y)+py*(.2+r.n*.15)}) scale(${size})`);
+ r.rotation.setAttribute('transform',!r.v?'':r.side==='left'?`translate(0 ${len}) rotate(-90)`:`translate(${r.thickness} 0) rotate(90)`);
+ r.clipRect.setAttribute('width',len);r.tape.setAttribute('transform',`translate(${-clock*r.speed%r.period} 0)`);
+ }photo.setAttribute('transform',`translate(${dx+px} ${dy+py})`)}
+ function reset(){dx=dy=tx=ty=px=py=mx=my=clock=0;render()}
+ const point=e=>new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+ photo.addEventListener('pointerdown',e=>{if(e.button!==0||drag)return;e.preventDefault();const p=point(e);drag={id:e.pointerId,x:p.x,y:p.y,dx,dy};tx=dx;ty=dy;mx=my=0;photo.setPointerCapture(e.pointerId);photo.classList.add('dragging')});
+ photo.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;const p=point(e);move(drag.dx+p.x-drag.x,drag.dy+p.y-drag.y)});
+ function end(){drag=null;photo.classList.remove('dragging')}for(const e of ['pointerup','pointercancel','lostpointercapture'])photo.addEventListener(e,end);
+ photo.addEventListener('dblclick',reset);photo.addEventListener('keydown',e=>{const step=e.shiftKey?20:5,d={ArrowLeft:[-step,0],ArrowRight:[step,0],ArrowUp:[0,-step],ArrowDown:[0,step]}[e.key];if(d){move(tx+d[0],ty+d[1]);e.preventDefault()}else if(e.key==='Home'){reset();e.preventDefault()}});
+ svg.addEventListener('pointermove',e=>{if(drag||paused||reduced.matches||e.pointerType!=='mouse')return;const p=point(e);mx=(p.x/W-.5)*W*.012;my=(p.y/H-.5)*H*.008});svg.addEventListener('pointerleave',()=>{mx=my=0});
+ function frame(now){if(!stage.isConnected)return;if(stage.offsetParent===null){last=now;requestAnimationFrame(frame);return}const dt=last?Math.min((now-last)/1000,.05):0;last=now;const ease=1-Math.exp(-dt*16);dx+=(tx-dx)*ease;dy+=(ty-dy)*ease;px+=((paused?0:mx)-px)*ease;py+=((paused?0:my)-py)*ease;if(!paused)clock+=dt;if(stage.offsetParent!==null)render();requestAnimationFrame(frame)}
+ render();requestAnimationFrame(frame);posters.push({id:a.id,stage,W,H,reset});
+}
+const stageRoot=document.querySelector('#composition');
+ let previous='';
+ function resize(){const w=stageRoot.clientWidth,h=stageRoot.clientHeight;
+ if(!w||!h||previous===w+'x'+h)return;
+ previous=w+'x'+h;stageRoot.replaceChildren();posters.length=0;mount(ARTWORKS[0]);}
+ document.fonts.ready.then(()=>Promise.all(['Chinese','ChineseMedium','English','EnglishMedium'].map(f=>document.fonts.load('100px '+f,f.startsWith('Chinese')?'阳台':'Ag')))).then(()=>{resize();new ResizeObserver(resize).observe(stageRoot)});
+})();</script><script>const wingCopy=[["A relationship of care becomes visible at the edge of the dwelling.", "We follow the figures towards the distance rather than facing their expressions.", "The city is visible while the bodies remain sheltered.", "Lingering together makes looking part of companionship.", "The mother and child seen from behind give the distant view a sense of care and security."], ["The balcony allows an individual to experience the city without joining the street crowd.", "The rear view makes the direction of looking clear while leaving his inner state unknown.", "Open railings preserve the view; height preserves distance.", "The edge of the home turns the moving street into an object for a stationary body.", "Ornamental railings and thick walls establish an elevated position for the figure."]];
+(()=>{
+ const canvas=document.querySelector('#wings'),ctx=canvas.getContext('2d');
+ const weights=[.33,.25,.19,.14,.09],tones=['#242422','#383836','#50504e','#6d6d69','#898986'];
+ let target=0,shift=0;
+ stage.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')target=e.clientY/stage.clientHeight-.5});
+ stage.addEventListener('pointerleave',()=>target=0);
+ function paint(time){
+   requestAnimationFrame(paint);
+   if(page!==1||cards.children.length!==2)return;
+   const w=stage.clientWidth,h=stage.clientHeight,dpr=Math.min(devicePixelRatio,2);
+   if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){
+     canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+   }
+   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+   shift+=(target-shift)*.09;
+   Array.from(cards.children).forEach((card,side)=>{
+     const box=card.getBoundingClientRect(),edge=side?w:0,inner=side?box.right:box.left;
+     const span=Math.abs(inner-edge);
+     if(span<2||(side?inner>w:inner<0))return;
+     let offset=0;
+     weights.forEach((weight,i)=>{
+       const width=span*weight,center=edge+(side?-1:1)*(offset+width/2);
+       const depth=i/(weights.length-1);
+       const top=depth*box.top, bottom=h+depth*(box.bottom-h);
+       ctx.save();ctx.beginPath();
+       ctx.rect(center-width/2,top,width,Math.max(0,bottom-top));ctx.clip();
+       ctx.translate(center,h/2);ctx.rotate(side?Math.PI/2:-Math.PI/2);
+       ctx.font=width*.94+'px '+(side?'English':'EnglishMedium')+',serif';ctx.fillStyle=tones[i];
+       const phrase=wingCopy[side][i],m=ctx.measureText(phrase),baseline=(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2;
+       const period=Math.max(1,m.width+width*.75);
+       const phase=(time*.001*(34-3*i)+shift*(i+1)*3)%period;
+       for(let x=-h/2-phase-period;x<h/2;x+=period)ctx.fillText(phrase,x,baseline);
+       ctx.restore();offset+=width;
+     });
+   });
+ }
+ document.fonts.load('24px EnglishMedium');document.fonts.load('24px English');requestAnimationFrame(paint);
+})();
+</script><script>(()=>{
+const copy=[["花园边缘把亲属关系转化为可见的社会图像。", "多人共同面向画面外部，形成展示性的排列。", "站位与座位把人物分成相邻而独立的位置。", "室外停留为家庭集合提供了共同的空间。", "座椅和花园位置把多人组织在同一画面。"], ["日常友谊通过照片离开原有现场。", "摄影把相处片刻转为可以反复观看的记忆。", "身体来到外面，身后仍是熟悉的住宅。", "有限空间让朋友们自然靠近。", "三位朋友的近距离站立显得自在。"]];
+const canvas=document.querySelector('#third'),ctx=canvas.getContext('2d');
+let target=0,shift=0;
+stage.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')target=e.clientX/stage.clientWidth-.5});
+stage.addEventListener('pointerleave',()=>target=0);
+function draw(time){
+ requestAnimationFrame(draw);
+ if(page!==2||cards.children.length!==3)return;
+ const w=stage.clientWidth,h=stage.clientHeight,d=Math.min(devicePixelRatio,2);
+ if(canvas.width!==Math.round(w*d)||canvas.height!==Math.round(h*d)){canvas.width=Math.round(w*d);canvas.height=Math.round(h*d)}
+ ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,w,h);
+ shift+=(target-shift)*.08;
+ [0,2].forEach((index,side)=>{
+   const box=cards.children[index].getBoundingClientRect();
+   const depth=Math.max(0,Math.min(h,side?h-box.bottom:box.top));
+   if(depth<1)return;
+   let offset=0;
+   [.33,.25,.19,.14,.09].forEach((weight,i)=>{
+     const t=i/4,height=depth*weight,y=side?h-offset-height:offset;
+     const left=box.left*t,right=w+(box.right-w)*t;
+     ctx.save();ctx.beginPath();ctx.rect(left,y,right-left,height);ctx.clip();
+     ctx.font=height*.9+'px '+(side?'ChineseMedium':'Chinese')+',serif';
+     ctx.fillStyle=['#242422','#383836','#50504e','#6d6d69','#898986'][i];
+     const line=copy[side][i],m=ctx.measureText(line),period=Math.max(1,m.width+height);
+     const baseline=y+(height+m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2;
+     const phase=(time*.001*(42-4*i)+shift*(i+1)*5)%period;
+     for(let x=left-phase-period;x<right;x+=period)ctx.fillText(line,x,baseline);
+     ctx.restore();offset+=height;
+   });
+ });
+}
+requestAnimationFrame(draw);
+})();
+</script><script>(()=>{
+const copy=[["住宅边缘通过吃饭这样的日常行为获得社会可读性。", "窗洞的深度让身体既显露又受到遮蔽。", "门窗附近的过渡空间容纳向外的日常动作。", "端盘而立把阳台变成无需正式布置的餐桌延伸。", "旧抹灰墙与细栏杆围住一处临边用餐位置。"], ["Balcony use shows that openness must be balanced with personal privacy.", "An outward view coexists with a need for inward protection.", "Railing height and neighbouring buildings together determine the degree of screening.", "Sunbathing makes the balcony a space organised around bodily comfort.", "Orientation and an open platform provide a place close to the sun."]];
+const canvas=document.querySelector('#fourth'),ctx=canvas.getContext('2d');
+let aim=[0,0],shift=[0,0];
+stage.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')aim=[e.clientX/stage.clientWidth-.5,e.clientY/stage.clientHeight-.5]});
+stage.addEventListener('pointerleave',()=>aim=[0,0]);
+function draw(time){
+ requestAnimationFrame(draw);
+ if(page!==3||cards.children.length!==4)return;
+ const w=stage.clientWidth,h=stage.clientHeight,d=Math.min(devicePixelRatio,2);
+ if(canvas.width!==Math.round(w*d)||canvas.height!==Math.round(h*d)){canvas.width=Math.round(w*d);canvas.height=Math.round(h*d)}
+ ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,w,h);
+ shift=shift.map((v,i)=>v+(aim[i]-v)*.08);
+ const top=cards.children[2].getBoundingClientRect(),right=cards.children[3].getBoundingClientRect();
+ const weights=[.33,.25,.19,.14,.09],colors=['#242422','#383836','#50504e','#6d6d69','#898986'];
+ let y=0,inset=0;
+ function row(side,i,x,y,length,height){
+   if(length<=0||height<1)return;
+   ctx.save();ctx.translate(x,y);if(side)ctx.rotate(Math.PI/2);
+   ctx.beginPath();ctx.rect(0,0,length,height);ctx.clip();
+   ctx.font=height*(side?.98:.9)+'px '+(side?'English':'Chinese')+',serif';ctx.fillStyle=colors[i];
+   const sentence=copy[side][i],m=ctx.measureText(sentence),period=Math.max(1,m.width+height);
+   const phase=(time*.001*(42-4*i)+shift[side]*(i+1)*5)%period;
+   for(let x=-period-phase;x<length;x+=period)ctx.fillText(sentence,x,(height+m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2);
+   ctx.restore();
+ }
+ const bands=[];
+ weights.forEach((weight,i)=>{
+   const t=i/4,height=Math.max(0,top.top)*weight,left=top.left*t,end=w+(top.right-w)*t;
+   row(0,i,left,y,end-left,height);y+=height;bands.push({end,y});
+ });
+ weights.forEach((weight,i)=>{
+   const t=i/4,width=Math.max(0,w-right.right)*weight,x=w-inset;
+   const start=Math.max(right.top*t,...bands.filter(b=>b.end>x-width).map(b=>b.y));
+   row(1,i,x,start,h+(right.bottom-h)*t-start,width);inset+=width;
+ });
+}
+requestAnimationFrame(draw);
+})();
+</script><script>(()=>{
+const copy=[["私人生活的改变与面对外部的意愿相连。", "人主动选择看出去，而非只是被安排在室内。", "帘幕打开，室内与外部的联系随之改变。", "接近窗口使人物能够重新感受外部光线。", "掀帘向外的动作让生活显出打开的愿望。"], ["Private waiting enters the picture through bodily posture.", "The viewer follows the direction of her body to imagine what holds her attention.", "The narrow foreground contains the body while the open distance extends perception.", "The body barely moves while attention turns towards the distance.", "A figure in profile on a narrow platform conveys restrained anticipation."]];
+const canvas=document.querySelector('#fifth'),ctx=canvas.getContext('2d');
+let aim=[0,0],shift=[0,0];
+stage.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')aim=[e.clientX/stage.clientWidth-.5,e.clientY/stage.clientHeight-.5]});
+stage.addEventListener('pointerleave',()=>aim=[0,0]);
+function draw(time){
+ requestAnimationFrame(draw);
+ if(page!==4||cards.children.length!==5)return;
+ const w=stage.clientWidth,h=stage.clientHeight,d=Math.min(devicePixelRatio,2);
+ if(canvas.width!==Math.round(w*d)||canvas.height!==Math.round(h*d)){canvas.width=Math.round(w*d);canvas.height=Math.round(h*d)}
+ ctx.setTransform(d,0,0,d,0,0);ctx.clearRect(0,0,w,h);
+ shift=shift.map((v,i)=>v+(aim[i]-v)*.08);
+ const top=cards.children[2].getBoundingClientRect(),right=cards.children[1].getBoundingClientRect();
+ const weights=[.33,.25,.19,.14,.09],colors=['#242422','#383836','#50504e','#6d6d69','#898986'];
+ let y=0,inset=0;
+ function row(side,i,x,y,length,height){
+   if(length<=0||height<1)return;
+   ctx.save();ctx.translate(x,y);if(side)ctx.rotate(-Math.PI/2);
+   ctx.beginPath();ctx.rect(0,0,length,height);ctx.clip();
+   ctx.font=height*(side?.98:.9)+'px '+(side?'EnglishMedium':'ChineseMedium')+',serif';ctx.fillStyle=colors[i];
+   const sentence=copy[side][i],m=ctx.measureText(sentence),period=Math.max(1,m.width+height);
+   const phase=(time*.001*(42-4*i)+shift[side]*(i+1)*5)%period;
+   for(let x=-period-phase;x<length;x+=period)ctx.fillText(sentence,x,(height+m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2);
+   ctx.restore();
+ }
+ const bands=[];
+ weights.forEach((weight,i)=>{
+   const t=i/4,height=Math.max(0,h-top.bottom)*weight,left=top.left*t,end=w+(top.right-w)*t;
+   row(0,i,left,h-y-height,end-left,height);y+=height;bands.push({left,y});
+ });
+ weights.forEach((weight,i)=>{
+   const t=i/4,width=Math.max(0,right.left)*weight,x=inset;
+   const start=right.top*t;
+   const bottom=h-Math.max((h-right.bottom)*t,...bands.filter(b=>b.left<x+width).map(b=>b.y));
+   row(1,i,x,bottom,bottom-start,width);inset+=width;
+ });
+}
+requestAnimationFrame(draw);
+})();
+</script><div id="juxtapose-hint" style="position:fixed;left:0;right:0;bottom:18px;text-align:center;font-family:Chinese,serif;font-size:12px;color:#999;pointer-events:none;z-index:20">双指张开向外浏览</div></body>
+</html>
